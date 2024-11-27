@@ -141,15 +141,15 @@ spawn(function()
     end
 end)
 
--- Contador de tempo no formato ⏰ 00:00:00
+-- Contador de tempo no formato ⏰ 00:00:00 usando os.time()
 spawn(function()
-    local timeElapsed = 0
+    local startTime = os.time()
     while ba.Parent do
-        local hours = math.floor(timeElapsed / 3600)
-        local minutes = math.floor((timeElapsed % 3600) / 60)
-        local seconds = timeElapsed % 60
+        local elapsedTime = os.time() - startTime
+        local hours = math.floor(elapsedTime / 3600)
+        local minutes = math.floor((elapsedTime % 3600) / 60)
+        local seconds = elapsedTime % 60
         timerLabel.Text = string.format("⏰ %02d:%02d:%02d", hours, minutes, seconds)
-        timeElapsed = timeElapsed + 1
-        wait(1)
+        wait(0.1) -- Atualizações rápidas, mas não afeta a precisão
     end
 end)

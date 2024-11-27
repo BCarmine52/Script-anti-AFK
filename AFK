@@ -1,0 +1,155 @@
+wait(0.5)
+
+-- Criando os objetos da interface
+local ba = Instance.new("ScreenGui")
+local mainFrame = Instance.new("Frame")
+local titleLabel = Instance.new("TextLabel")
+local statusLabel = Instance.new("TextLabel")
+local authorLabel = Instance.new("TextLabel")
+local timerLabel = Instance.new("TextLabel")
+local closeButton = Instance.new("TextButton")
+local uiCornerMain = Instance.new("UICorner")
+local uiCornerStatus = Instance.new("UICorner")
+local uiCornerAuthor = Instance.new("UICorner")
+local uiCornerTimer = Instance.new("UICorner")
+local uiCornerButton = Instance.new("UICorner")
+local gradientTitle = Instance.new("UIGradient")
+local maskFrame = Instance.new("Frame")
+
+-- Configuração da GUI principal
+ba.Parent = game.CoreGui
+ba.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Configuração da janela principal
+mainFrame.Parent = ba
+mainFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
+mainFrame.Position = UDim2.new(0.7, 0, 0.3, 0) -- Ajustado para aparecer mais à direita
+mainFrame.Size = UDim2.new(0, 200, 0, 200)
+mainFrame.Active = true
+mainFrame.Draggable = true
+
+-- Borda arredondada para a janela principal
+uiCornerMain.CornerRadius = UDim.new(0, 10)
+uiCornerMain.Parent = mainFrame
+
+-- Máscara para o arredondamento parcial do título
+maskFrame.Parent = mainFrame
+maskFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+maskFrame.Size = UDim2.new(1, 0, 0.25, 0)
+maskFrame.ZIndex = 2
+local maskCorner = Instance.new("UICorner")
+maskCorner.CornerRadius = UDim.new(0, 10)
+maskCorner.Parent = maskFrame
+
+-- Configuração do título
+titleLabel.Parent = maskFrame
+titleLabel.BackgroundTransparency = 1
+titleLabel.Size = UDim2.new(1, 0, 1, 0)
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Text = "Anti AFK Script"
+titleLabel.TextColor3 = Color3.new(1, 1, 1)
+titleLabel.TextSize = 16
+titleLabel.ZIndex = 3
+
+-- Gradiente RGB para o título
+gradientTitle.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0.0, Color3.new(1, 0, 0)),
+    ColorSequenceKeypoint.new(0.5, Color3.new(0, 1, 0)),
+    ColorSequenceKeypoint.new(1.0, Color3.new(0, 0, 1))
+}
+gradientTitle.Rotation = 0
+gradientTitle.Parent = titleLabel
+
+-- Configuração do status
+statusLabel.Parent = mainFrame
+statusLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+statusLabel.Position = UDim2.new(0, 10, 0.3, 0)
+statusLabel.Size = UDim2.new(0.9, 0, 0.2, 0)
+statusLabel.Font = Enum.Font.ArialBold
+statusLabel.Text = "Status: Active"
+statusLabel.TextColor3 = Color3.new(0, 1, 0.05)
+statusLabel.TextSize = 14
+
+-- Borda arredondada para o status
+uiCornerStatus.CornerRadius = UDim.new(0, 10)
+uiCornerStatus.Parent = statusLabel
+
+-- Configuração da autoria
+authorLabel.Parent = mainFrame
+authorLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+authorLabel.Position = UDim2.new(0, 10, 0.55, 0)
+authorLabel.Size = UDim2.new(0.9, 0, 0.15, 0)
+authorLabel.Font = Enum.Font.Arial
+authorLabel.Text = "Made by DenisBC"
+authorLabel.TextColor3 = Color3.new(0.55, 0, 1)
+authorLabel.TextSize = 14
+
+-- Borda arredondada para a autoria
+uiCornerAuthor.CornerRadius = UDim.new(0, 10)
+uiCornerAuthor.Parent = authorLabel
+
+-- Configuração do contador de tempo
+timerLabel.Parent = mainFrame
+timerLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+timerLabel.Position = UDim2.new(0, 10, 0.72, 0)
+timerLabel.Size = UDim2.new(0.9, 0, 0.15, 0)
+timerLabel.Font = Enum.Font.GothamBold -- Fonte arredondada e negrito
+timerLabel.Text = "⏰ 00:00:00"
+timerLabel.TextColor3 = Color3.new(1, 1, 1)
+timerLabel.TextSize = 16
+
+-- Borda arredondada para o contador de tempo
+uiCornerTimer.CornerRadius = UDim.new(0, 10)
+uiCornerTimer.Parent = timerLabel
+
+-- Configuração do botão para fechar a interface
+closeButton.Parent = mainFrame
+closeButton.BackgroundColor3 = Color3.new(1, 0, 0)
+closeButton.Position = UDim2.new(0, 10, 0.9, 0)
+closeButton.Size = UDim2.new(0.9, 0, 0.08, 0)
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.Text = "Close"
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.TextSize = 14
+
+-- Borda arredondada para o botão
+uiCornerButton.CornerRadius = UDim.new(0, 10)
+uiCornerButton.Parent = closeButton
+
+-- Função para fechar a interface
+closeButton.MouseButton1Click:Connect(function()
+    ba:Destroy()
+end)
+
+-- Anti-AFK Script
+local bb = game:GetService("VirtualUser")
+game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    bb:CaptureController()
+    bb:ClickButton2(Vector2.new())
+    statusLabel.Text = "Roblox Tried to kick you but we didnt let them kick you :D"
+    wait(2)
+    statusLabel.Text = "Status: Active"
+end)
+
+-- Animação do gradiente RGB
+spawn(function()
+    while true do
+        for i = 0, 1, 0.01 do
+            gradientTitle.Rotation = gradientTitle.Rotation + 1
+            wait(0.01)
+        end
+    end
+end)
+
+-- Contador de tempo no formato ⏰ 00:00:00
+spawn(function()
+    local timeElapsed = 0
+    while ba.Parent do
+        local hours = math.floor(timeElapsed / 3600)
+        local minutes = math.floor((timeElapsed % 3600) / 60)
+        local seconds = timeElapsed % 60
+        timerLabel.Text = string.format("⏰ %02d:%02d:%02d", hours, minutes, seconds)
+        timeElapsed = timeElapsed + 1
+        wait(1)
+    end
+end)

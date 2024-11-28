@@ -1,5 +1,20 @@
 wait(0.5)
 
+-- Função para verificar o número de jogadores no servidor
+local function checkPlayers()
+    local players = game.Players:GetPlayers() -- Obtém a lista de jogadores no servidor
+    if #players > 1 then
+        game.Players.LocalPlayer:Kick("Joined a public server, use yuumy or android manager to reconnect automatically on the private server, only 1 account per server!")
+    end
+end
+
+-- Verifica o número de jogadores no início
+checkPlayers()
+
+-- Evento para monitorar alterações na lista de jogadores
+game.Players.PlayerAdded:Connect(checkPlayers)
+game.Players.PlayerRemoving:Connect(checkPlayers)
+
 -- Criando os objetos da interface
 local ba = Instance.new("ScreenGui")
 local mainFrame = Instance.new("Frame")
@@ -17,13 +32,13 @@ local gradientTitle = Instance.new("UIGradient")
 local maskFrame = Instance.new("Frame")
 
 -- Configuração da GUI principal
-ba.Parent = game.CoreGui
+ba.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 ba.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- Configuração da janela principal
 mainFrame.Parent = ba
 mainFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-mainFrame.Position = UDim2.new(0.7, 0, 0.3, 0) -- Ajustado para aparecer mais à direita
+mainFrame.Position = UDim2.new(0.7, 0, 0.3, 0)
 mainFrame.Size = UDim2.new(0, 200, 0, 200)
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -93,7 +108,7 @@ timerLabel.Parent = mainFrame
 timerLabel.BackgroundColor3 = Color3.new(0, 0, 0)
 timerLabel.Position = UDim2.new(0, 10, 0.72, 0)
 timerLabel.Size = UDim2.new(0.9, 0, 0.15, 0)
-timerLabel.Font = Enum.Font.GothamBold -- Fonte arredondada e negrito
+timerLabel.Font = Enum.Font.GothamBold 
 timerLabel.Text = "⏰ 00:00:00"
 timerLabel.TextColor3 = Color3.new(1, 1, 1)
 timerLabel.TextSize = 16
@@ -141,15 +156,15 @@ spawn(function()
     end
 end)
 
--- Contador de tempo no formato ⏰ 00:00:00 usando os.time()
+-- Contador de tempo no formato ⏰ 00:00:00 usando tick()
 spawn(function()
-    local startTime = os.time()
+    local startTime = tick()
     while ba.Parent do
-        local elapsedTime = os.time() - startTime
+        local elapsedTime = tick() - startTime
         local hours = math.floor(elapsedTime / 3600)
         local minutes = math.floor((elapsedTime % 3600) / 60)
-        local seconds = elapsedTime % 60
+        local seconds = math.floor(elapsedTime % 60)
         timerLabel.Text = string.format("⏰ %02d:%02d:%02d", hours, minutes, seconds)
-        wait(0.1) -- Atualizações rápidas, mas não afeta a precisão
+        wait(0.1)
     end
 end)

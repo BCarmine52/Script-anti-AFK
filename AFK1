@@ -167,7 +167,7 @@ spawn(function()
         timerLabel.Text = string.format("⏰ %02d:%02d:%02d", hours, minutes, seconds)
 
         -- Desconectar após 1 hora e 30 minutos
-        if hours == 1 and minutes == 30 and seconds == 0 then
+        if hours == 2 and minutes == 0 and seconds == 0 then
             game.Players.LocalPlayer:Kick("Reconnecting to avoid failures")
         end
         

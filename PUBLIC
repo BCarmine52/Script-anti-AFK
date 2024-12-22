@@ -162,7 +162,7 @@ end)
 -- Kick automático após 1 hora
 spawn(function()
     while true do
-        wait(3600) -- Espera 1 hora
+        wait(36000) -- Espera 1 hora
         game.Players.LocalPlayer:Kick("You were kicked after 1 hour of playtime!")
     end
 end)

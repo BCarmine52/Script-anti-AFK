@@ -1,0 +1,379 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+local Stats = game:GetService("Stats")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local ativo = false
+local originals = {}
+local lBackup = {}
+local tBackup = {}
+local camFOV = nil
+local coreBackup = {}
+local prendasBackup = {}
+local descConn, camConn, prendasConn = nil, nil, nil
+local blackScreen = nil
+local gcThread = nil
+
+local function sSet(o,p,v) pcall(function() o[p]=v end) end
+
+local function sSave(o,ps)
+	if not originals[o] then originals[o]={} end
+	for _,p in ipairs(ps) do
+		if originals[o][p]==nil then
+			local ok,v=pcall(function() return o[p] end)
+			if ok then originals[o][p]=v end
+		end
+	end
+end
+
+local function isMe(o)
+	local c=player.Character
+	return c and (o==c or o:IsDescendantOf(c))
+end
+
+local function nuke(o)
+	if isMe(o) then return end
+	if o:IsA("BasePart") and not o:IsA("Terrain") then
+		sSave(o,{"CastShadow","Material","Reflectance","LocalTransparencyModifier","RenderFidelity"})
+		sSet(o,"CastShadow",false)
+		sSet(o,"Material",Enum.Material.SmoothPlastic)
+		sSet(o,"Reflectance",0)
+		sSet(o,"LocalTransparencyModifier",1)
+		if o:IsA("MeshPart") then sSet(o,"RenderFidelity",Enum.RenderFidelity.Performance) end
+	end
+	if o:IsA("Texture") or o:IsA("Decal") then
+		sSave(o,{"Transparency"})
+		sSet(o,"Transparency",1)
+	end
+	if o:IsA("ParticleEmitter") then
+		sSave(o,{"Enabled","Rate"})
+		sSet(o,"Enabled",false)
+		sSet(o,"Rate",0)
+	end
+	if o:IsA("Trail") or o:IsA("Beam") or o:IsA("Fire") or o:IsA("Smoke") or o:IsA("Sparkles") then
+		sSave(o,{"Enabled"})
+		sSet(o,"Enabled",false)
+	end
+	if o:IsA("Light") then
+		sSave(o,{"Enabled"})
+		sSet(o,"Enabled",false)
+	end
+	if o:IsA("BillboardGui") or o:IsA("SurfaceGui") then
+		sSave(o,{"Enabled"})
+		sSet(o,"Enabled",false)
+	end
+	if o:IsA("Humanoid") then
+		sSave(o,{"DisplayDistanceType"})
+		sSet(o,"DisplayDistanceType",Enum.HumanoidDisplayDistanceType.None)
+	end
+end
+
+local function ATIVAR()
+	ativo = true
+
+	lBackup = {}
+	for _,p in ipairs({"GlobalShadows","Brightness","FogEnd","FogStart","FogColor","Ambient","OutdoorAmbient","EnvironmentDiffuseScale","EnvironmentSpecularScale","Technology"}) do
+		local ok,v=pcall(function() return Lighting[p] end)
+		if ok then lBackup[p]=v end
+	end
+	sSet(Lighting,"Technology",Enum.Technology.Compatibility)
+	sSet(Lighting,"GlobalShadows",false)
+	sSet(Lighting,"Brightness",0)
+	sSet(Lighting,"FogEnd",1)
+	sSet(Lighting,"FogStart",0)
+	sSet(Lighting,"FogColor",Color3.new(0,0,0))
+	sSet(Lighting,"Ambient",Color3.new(0,0,0))
+	sSet(Lighting,"OutdoorAmbient",Color3.new(0,0,0))
+	sSet(Lighting,"EnvironmentDiffuseScale",0)
+	sSet(Lighting,"EnvironmentSpecularScale",0)
+
+	for _,c in ipairs(Lighting:GetChildren()) do
+		if c:IsA("PostEffect") then sSave(c,{"Enabled"}) sSet(c,"Enabled",false) end
+		if c:IsA("Atmosphere") then sSave(c,{"Density","Offset"}) sSet(c,"Density",1) sSet(c,"Offset",0) end
+		if c:IsA("Sky") then sSave(c,{"StarCount","CelestialBodiesShown","SunAngularSize","MoonAngularSize"}) sSet(c,"StarCount",0) sSet(c,"CelestialBodiesShown",false) sSet(c,"SunAngularSize",0) sSet(c,"MoonAngularSize",0) end
+		if c:IsA("Clouds") then sSave(c,{"Enabled"}) sSet(c,"Enabled",false) end
+	end
+
+	tBackup = {}
+	local terrain = Workspace.Terrain
+	for _,p in ipairs({"WaterTransparency","WaterReflectance","WaterWaveSize","WaterWaveSpeed","Decoration"}) do
+		local ok,v=pcall(function() return terrain[p] end)
+		if ok then tBackup[p]=v end
+	end
+	sSet(terrain,"WaterTransparency",1)
+	sSet(terrain,"WaterReflectance",0)
+	sSet(terrain,"WaterWaveSize",0)
+	sSet(terrain,"WaterWaveSpeed",0)
+	sSet(terrain,"Decoration",false)
+
+	local cam = Workspace.CurrentCamera
+	if cam then
+		if not camFOV then camFOV = cam.FieldOfView end
+		sSet(cam,"FieldOfView",1)
+	end
+
+	for _,g in ipairs({Enum.CoreGuiType.PlayerList,Enum.CoreGuiType.Backpack,Enum.CoreGuiType.EmotesMenu}) do
+		pcall(function() coreBackup[g]=StarterGui:GetCoreGuiEnabled(g) StarterGui:SetCoreGuiEnabled(g,false) end)
+	end
+
+	pcall(function() settings().Rendering.QualityLevel=Enum.QualityLevel.Level01 end)
+
+	local n=0
+	for _,o in ipairs(Workspace:GetDescendants()) do
+		nuke(o)
+		n+=1
+		if n%500==0 then task.wait() end
+	end
+
+	if descConn then descConn:Disconnect() end
+	descConn = Workspace.DescendantAdded:Connect(function(o)
+		if ativo then task.defer(function() nuke(o) end) end
+	end)
+
+	if camConn then camConn:Disconnect() end
+	camConn = Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		if ativo then task.wait(0.1) local c=Workspace.CurrentCamera if c then sSet(c,"FieldOfView",1) end end
+	end)
+
+	for _,j in ipairs(Players:GetPlayers()) do
+		if j~=player then
+			local ok,amigo=pcall(function() return player:IsFriendsWith(j.UserId) end)
+			if not (ok and amigo) then
+				local ch=j.Character
+				if ch then
+					for _,o in ipairs(ch:GetChildren()) do
+						if o:IsA("Accessory") or o:IsA("Shirt") or o:IsA("Pants") or o:IsA("ShirtGraphic") then
+							prendasBackup[o]=o.Parent
+							o.Parent=nil
+						end
+					end
+				end
+			end
+		end
+	end
+
+	if prendasConn then prendasConn:Disconnect() end
+	prendasConn = Players.PlayerAdded:Connect(function(j)
+		local ok,amigo=pcall(function() return player:IsFriendsWith(j.UserId) end)
+		if ok and amigo then return end
+		j.CharacterAdded:Connect(function(ch)
+			task.wait(1)
+			if not ativo then return end
+			for _,o in ipairs(ch:GetChildren()) do
+				if o:IsA("Accessory") or o:IsA("Shirt") or o:IsA("Pants") or o:IsA("ShirtGraphic") then
+					prendasBackup[o]=o.Parent
+					o.Parent=nil
+				end
+			end
+		end)
+	end)
+
+	gcThread = task.spawn(function()
+		while ativo do
+			task.wait(10)
+			pcall(function() collectgarbage("collect") end)
+		end
+	end)
+
+	if blackScreen then blackScreen.Visible=true blackScreen.BackgroundTransparency=0 end
+end
+
+local function DESATIVAR()
+	ativo = false
+
+	for o,ps in pairs(originals) do
+		if o and o.Parent then
+			for p,v in pairs(ps) do sSet(o,p,v) end
+		end
+	end
+	originals = {}
+
+	for p,v in pairs(lBackup) do sSet(Lighting,p,v) end
+
+	for _,c in ipairs(Lighting:GetChildren()) do
+		if originals[c] then for p,v in pairs(originals[c]) do sSet(c,p,v) end end
+	end
+
+	local terrain=Workspace.Terrain
+	for p,v in pairs(tBackup) do sSet(terrain,p,v) end
+
+	local cam=Workspace.CurrentCamera
+	if cam and camFOV then sSet(cam,"FieldOfView",camFOV) end
+	camFOV=nil
+
+	for g,was in pairs(coreBackup) do
+		pcall(function() StarterGui:SetCoreGuiEnabled(g,was) end)
+	end
+	coreBackup={}
+
+	for o,par in pairs(prendasBackup) do
+		if o and not o.Parent then pcall(function() o.Parent=par end) end
+	end
+	prendasBackup={}
+
+	pcall(function() settings().Rendering.QualityLevel=Enum.QualityLevel.Automatic end)
+
+	if descConn then descConn:Disconnect() descConn=nil end
+	if camConn then camConn:Disconnect() camConn=nil end
+	if prendasConn then prendasConn:Disconnect() prendasConn=nil end
+
+	if blackScreen then blackScreen.Visible=false blackScreen.BackgroundTransparency=1 end
+end
+
+local currentFPS = 0
+local fc,fa = 0,0
+RunService.RenderStepped:Connect(function(dt)
+	fa+=dt fc+=1
+	if fa>=0.5 then
+		currentFPS=math.floor(fc/fa+0.5)
+		fc=0 fa=0
+	end
+end)
+
+local function getMemMB()
+	local ok,m=pcall(function() return Stats:GetTotalMemoryUsageMb() end)
+	if ok and m then return math.floor(m) end
+	return 0
+end
+
+local function buildUI()
+	local old=playerGui:FindFirstChild("_OPT")
+	if old then old:Destroy() end
+
+	local gui=Instance.new("ScreenGui")
+	gui.Name="_OPT"
+	gui.ResetOnSpawn=false
+	gui.DisplayOrder=999999
+	gui.IgnoreGuiInset=true
+	gui.Parent=playerGui
+
+	blackScreen=Instance.new("Frame")
+	blackScreen.Size=UDim2.fromScale(1,1)
+	blackScreen.BackgroundColor3=Color3.new(0,0,0)
+	blackScreen.BackgroundTransparency=1
+	blackScreen.BorderSizePixel=0
+	blackScreen.ZIndex=1
+	blackScreen.Visible=false
+	blackScreen.Parent=gui
+
+	local ind=Instance.new("Frame")
+	ind.Size=UDim2.fromOffset(130,44)
+	ind.Position=UDim2.new(1,-140,0,8)
+	ind.BackgroundColor3=Color3.fromRGB(6,6,10)
+	ind.BackgroundTransparency=0.1
+	ind.BorderSizePixel=0
+	ind.ZIndex=100
+	ind.Parent=gui
+	Instance.new("UICorner",ind).CornerRadius=UDim.new(0,6)
+
+	local st=Instance.new("UIStroke")
+	st.Color=Color3.fromRGB(180,0,0)
+	st.Thickness=1
+	st.Transparency=0.4
+	st.Parent=ind
+
+	local fpsLbl=Instance.new("TextLabel")
+	fpsLbl.Size=UDim2.new(0.5,0,0.5,0)
+	fpsLbl.Position=UDim2.fromOffset(6,2)
+	fpsLbl.BackgroundTransparency=1
+	fpsLbl.Text="FPS: --"
+	fpsLbl.TextColor3=Color3.fromRGB(80,255,80)
+	fpsLbl.Font=Enum.Font.GothamBold
+	fpsLbl.TextSize=11
+	fpsLbl.TextXAlignment=Enum.TextXAlignment.Left
+	fpsLbl.ZIndex=101
+	fpsLbl.Parent=ind
+
+	local memLbl=Instance.new("TextLabel")
+	memLbl.Size=UDim2.new(0.5,0,0.5,0)
+	memLbl.Position=UDim2.new(0.5,0,0,2)
+	memLbl.BackgroundTransparency=1
+	memLbl.Text="RAM: --"
+	memLbl.TextColor3=Color3.fromRGB(255,220,100)
+	memLbl.Font=Enum.Font.GothamBold
+	memLbl.TextSize=11
+	memLbl.TextXAlignment=Enum.TextXAlignment.Left
+	memLbl.ZIndex=101
+	memLbl.Parent=ind
+
+	local statusLbl=Instance.new("TextLabel")
+	statusLbl.Size=UDim2.new(1,-12,0.5,0)
+	statusLbl.Position=UDim2.new(0,6,0.5,0)
+	statusLbl.BackgroundTransparency=1
+	statusLbl.Text="⚡ ATIVO"
+	statusLbl.TextColor3=Color3.fromRGB(180,0,0)
+	statusLbl.Font=Enum.Font.GothamBold
+	statusLbl.TextSize=9
+	statusLbl.TextXAlignment=Enum.TextXAlignment.Left
+	statusLbl.ZIndex=101
+	statusLbl.Parent=ind
+
+	local mt=0
+	RunService.RenderStepped:Connect(function(dt)
+		if not fpsLbl.Parent then return end
+		local fc = currentFPS
+		fpsLbl.Text="FPS: "..fc
+		if fc>=55 then fpsLbl.TextColor3=Color3.fromRGB(80,255,80)
+		elseif fc>=30 then fpsLbl.TextColor3=Color3.fromRGB(255,255,80)
+		else fpsLbl.TextColor3=Color3.fromRGB(255,80,80) end
+
+		mt+=dt
+		if mt>=2 then
+			mt=0
+			local m=getMemMB()
+			memLbl.Text="RAM: "..m
+			if m>2048 then memLbl.TextColor3=Color3.fromRGB(255,80,80)
+			elseif m>1024 then memLbl.TextColor3=Color3.fromRGB(255,200,80)
+			else memLbl.TextColor3=Color3.fromRGB(130,255,130) end
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input,gpe)
+		if gpe then return end
+		if input.UserInputType~=Enum.UserInputType.Touch and input.UserInputType~=Enum.UserInputType.MouseButton1 then return end
+		local p=input.Position
+		local ap,as=ind.AbsolutePosition,ind.AbsoluteSize
+		if p.X>=ap.X and p.X<=ap.X+as.X and p.Y>=ap.Y and p.Y<=ap.Y+as.Y then return end
+
+		if ativo then
+			DESATIVAR()
+			statusLbl.Text="⚪ INATIVO"
+			statusLbl.TextColor3=Color3.fromRGB(80,80,90)
+			st.Color=Color3.fromRGB(50,50,60)
+		else
+			ATIVAR()
+			statusLbl.Text="⚡ ATIVO"
+			statusLbl.TextColor3=Color3.fromRGB(180,0,0)
+			st.Color=Color3.fromRGB(180,0,0)
+		end
+	end)
+
+	player.CharacterAdded:Connect(function()
+		task.wait(1)
+		if ativo then ATIVAR() end
+	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(3)
+			if ativo and not playerGui:FindFirstChild("_OPT") then
+				buildUI()
+				if ativo then
+					blackScreen.Visible=true
+					blackScreen.BackgroundTransparency=0
+				end
+				return
+			end
+		end
+	end)
+end
+
+if not player.Character then player.CharacterAdded:Wait() end
+task.wait(1)
+buildUI()
+ATIVAR()

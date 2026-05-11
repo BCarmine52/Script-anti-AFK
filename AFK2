@@ -1,0 +1,167 @@
+wait(0.5)
+
+local whitelist = {
+    ["DBC_BR1"] = true,
+    ["DBC_BR2"] = true,
+    ["DBC_BR3"] = true,
+    ["DBC_BR4"] = true,
+    ["DBC_BR5"] = true
+}
+
+local function checkPlayers()
+    local players = game.Players:GetPlayers()
+    
+    for _, player in ipairs(players) do
+        if not whitelist[player.Name] then
+            game.Players.LocalPlayer:Kick("Joined a public server (Unlisted player: " .. player.Name .. "). Use yuumy or android manager to reconnect automatically on the private server!")
+            return
+        end
+    end
+end
+
+checkPlayers()
+
+game.Players.PlayerAdded:Connect(checkPlayers)
+
+spawn(function()
+    while true do
+        wait(10)
+        checkPlayers()
+    end
+end)
+
+local ba = Instance.new("ScreenGui")
+local mainFrame = Instance.new("Frame")
+local titleLabel = Instance.new("TextLabel")
+local statusLabel = Instance.new("TextLabel")
+local authorLabel = Instance.new("TextLabel")
+local timerLabel = Instance.new("TextLabel")
+local closeButton = Instance.new("TextButton")
+local uiCornerMain = Instance.new("UICorner")
+local uiCornerStatus = Instance.new("UICorner")
+local uiCornerAuthor = Instance.new("UICorner")
+local uiCornerTimer = Instance.new("UICorner")
+local uiCornerButton = Instance.new("UICorner")
+local gradientTitle = Instance.new("UIGradient")
+local maskFrame = Instance.new("Frame")
+
+ba.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ba.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+mainFrame.Parent = ba
+mainFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
+mainFrame.Position = UDim2.new(0.7, 0, 0.3, 0)
+mainFrame.Size = UDim2.new(0, 200, 0, 200)
+mainFrame.Active = true
+mainFrame.Draggable = true
+
+uiCornerMain.CornerRadius = UDim.new(0, 10)
+uiCornerMain.Parent = mainFrame
+
+maskFrame.Parent = mainFrame
+maskFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+maskFrame.Size = UDim2.new(1, 0, 0.25, 0)
+maskFrame.ZIndex = 2
+local maskCorner = Instance.new("UICorner")
+maskCorner.CornerRadius = UDim.new(0, 10)
+maskCorner.Parent = maskFrame
+
+titleLabel.Parent = maskFrame
+titleLabel.BackgroundTransparency = 1
+titleLabel.Size = UDim2.new(1, 0, 1, 0)
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Text = "Anti Public Script"
+titleLabel.TextColor3 = Color3.new(1, 1, 1)
+titleLabel.TextSize = 16
+titleLabel.ZIndex = 3
+
+gradientTitle.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0.0, Color3.new(1, 0, 0)),
+    ColorSequenceKeypoint.new(0.5, Color3.new(0, 1, 0)),
+    ColorSequenceKeypoint.new(1.0, Color3.new(0, 0, 1))
+}
+gradientTitle.Rotation = 0
+gradientTitle.Parent = titleLabel
+
+statusLabel.Parent = mainFrame
+statusLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+statusLabel.Position = UDim2.new(0, 10, 0.3, 0)
+statusLabel.Size = UDim2.new(0.9, 0, 0.2, 0)
+statusLabel.Font = Enum.Font.ArialBold
+statusLabel.Text = "Status: Active"
+statusLabel.TextColor3 = Color3.new(0, 1, 0.05)
+statusLabel.TextSize = 14
+
+uiCornerStatus.CornerRadius = UDim.new(0, 10)
+uiCornerStatus.Parent = statusLabel
+
+authorLabel.Parent = mainFrame
+authorLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+authorLabel.Position = UDim2.new(0, 10, 0.55, 0)
+authorLabel.Size = UDim2.new(0.9, 0, 0.15, 0)
+authorLabel.Font = Enum.Font.Arial
+authorLabel.Text = "Made by DenisBC"
+authorLabel.TextColor3 = Color3.new(0.55, 0, 1)
+authorLabel.TextSize = 14
+
+uiCornerAuthor.CornerRadius = UDim.new(0, 10)
+uiCornerAuthor.Parent = authorLabel
+
+timerLabel.Parent = mainFrame
+timerLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+timerLabel.Position = UDim2.new(0, 10, 0.72, 0)
+timerLabel.Size = UDim2.new(0.9, 0, 0.15, 0)
+timerLabel.Font = Enum.Font.GothamBold 
+timerLabel.Text = "⏰ 00:00:00"
+timerLabel.TextColor3 = Color3.new(1, 1, 1)
+timerLabel.TextSize = 16
+
+uiCornerTimer.CornerRadius = UDim.new(0, 10)
+uiCornerTimer.Parent = timerLabel
+
+closeButton.Parent = mainFrame
+closeButton.BackgroundColor3 = Color3.new(1, 0, 0)
+closeButton.Position = UDim2.new(0, 10, 0.9, 0)
+closeButton.Size = UDim2.new(0.9, 0, 0.08, 0)
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.Text = "Close"
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.TextSize = 14
+
+uiCornerButton.CornerRadius = UDim.new(0, 10)
+uiCornerButton.Parent = closeButton
+
+closeButton.MouseButton1Click:Connect(function()
+    ba:Destroy()
+end)
+
+local bb = game:GetService("VirtualUser")
+game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    bb:CaptureController()
+    bb:ClickButton2(Vector2.new())
+    statusLabel.Text = "Roblox Tried to kick you but we didnt let them kick you :D"
+    wait(2)
+    statusLabel.Text = "Status: Active"
+end)
+
+spawn(function()
+    while true do
+        for i = 0, 1, 0.01 do
+            gradientTitle.Rotation = gradientTitle.Rotation + 1
+            wait(0.01)
+        end
+    end
+end)
+
+spawn(function()
+    local startTime = tick()
+    while ba.Parent do
+        local elapsedTime = tick() - startTime
+        local hours = math.floor(elapsedTime / 3600)
+        local minutes = math.floor((elapsedTime % 3600) / 60)
+        local seconds = math.floor(elapsedTime % 60)
+        timerLabel.Text = string.format("⏰ %02d:%02d:%02d", hours, minutes, seconds)
+        
+        wait(0.1)
+    end
+end)

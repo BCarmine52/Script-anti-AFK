@@ -5,6 +5,7 @@ local whitelist = {
     ["DBC_STOCK23"] = true,
     ["DBC_STOCK24"] = true,
     ["DBC_STOCK25"] = true,
+    ["Soko_Fan1"] = true,
     ["DBC_BR1"] = true,
     ["DBC_BR2"] = true,
     ["DBC_BR3"] = true,
